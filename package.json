@@ -1,0 +1,14 @@
+{
+  "name": "linkly",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A tiny URL shortener with click analytics",
+  "scripts": {
+    "start": "node --experimental-strip-types src/server.ts",
+    "test": "node --experimental-strip-types --test test/"
+  },
+  "engines": {
+    "node": ">=22.7"
+  }
+}
