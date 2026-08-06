@@ -1,12 +1,14 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import type { ClickTracker } from "./analytics.ts";
+import { isValidApiKey } from "./api-keys.ts";
 import { generateSlug, isValidSlug } from "./slug.ts";
 import type { LinkStore } from "./store.ts";
 
 export interface RouterContext {
   store: LinkStore;
   tracker: ClickTracker;
+  limiter: { allow(key: string, now?: number): boolean };
 }
 
 export async function handleRequest(
@@ -18,12 +20,20 @@ export async function handleRequest(
   const method = req.method ?? "GET";
 
   if (method === "POST" && url.pathname === "/api/links") {
+    const apiKey = requireApiKey(req, res, context);
+    if (apiKey === null) {
+      return;
+    }
     await handleCreateLink(req, res, context);
     return;
   }
 
   const statsMatch = url.pathname.match(/^\/api\/links\/([^/]+)\/stats$/);
   if (method === "GET" && statsMatch !== null) {
+    const apiKey = requireApiKey(req, res, context);
+    if (apiKey === null) {
+      return;
+    }
     handleStats(res, statsMatch[1], context);
     return;
   }
@@ -35,6 +45,32 @@ export async function handleRequest(
   }
 
   sendJson(res, 404, { error: "not found" });
+}
+
+/**
+ * Authenticate and rate limit an API request. Returns the API key when the
+ * request may proceed, or null after writing an error response.
+ */
+function requireApiKey(
+  req: IncomingMessage,
+  res: ServerResponse,
+  { limiter }: RouterContext
+): string | null {
+  const header = req.headers["x-api-key"];
+  const apiKey = Array.isArray(header) ? header[0] : header;
+
+  if (apiKey === undefined || !isValidApiKey(apiKey)) {
+    console.warn(`rejected request with api key: ${apiKey}`);
+    sendJson(res, 401, { error: "missing or invalid API key" });
+    return null;
+  }
+
+  if (!limiter.allow(apiKey)) {
+    sendJson(res, 429, { error: "rate limit exceeded" });
+    return null;
+  }
+
+  return apiKey;
 }
 
 async function handleCreateLink(
