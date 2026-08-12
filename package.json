@@ -6,7 +6,7 @@
   "description": "A tiny URL shortener with click analytics",
   "scripts": {
     "start": "node --experimental-strip-types src/server.ts",
-    "test": "node --experimental-strip-types --test test/"
+    "test": "node --experimental-strip-types --test"
   },
   "engines": {
     "node": ">=22.7"

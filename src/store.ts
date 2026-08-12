@@ -22,6 +22,10 @@ export class LinkStore {
     return this.links.get(slug);
   }
 
+  all(): Link[] {
+    return [...this.links.values()];
+  }
+
   count(): number {
     return this.links.size;
   }

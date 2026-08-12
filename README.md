@@ -21,16 +21,32 @@ The server listens on `PORT` (default `3000`).
 | GET    | `/api/links/:slug/stats`| Click stats for a link               |
 | GET    | `/:slug`                | Redirect to the target URL           |
 
+### Configuration
+
+| Variable              | Default | Description                    |
+| --------------------- | ------- | ------------------------------ |
+| `PORT`                | `3000`  | HTTP port                      |
+| `LINKLY_SLUG_LENGTH`  | `7`     | Length of generated slugs      |
+
 ## Layout
 
-- `src/server.ts` — HTTP server bootstrap
-- `src/router.ts` — request routing and handlers
-- `src/store.ts` — in-memory link storage
-- `src/slug.ts` — short-slug generation and validation
-- `src/analytics.ts` — click tracking
+| Module              | Responsibility                                  |
+| ------------------- | ----------------------------------------------- |
+| `src/server.ts`     | HTTP server bootstrap and wiring                |
+| `src/router.ts`     | Request routing and handlers                    |
+| `src/store.ts`      | In-memory link storage                          |
+| `src/analytics.ts`  | Click tracking                                  |
+| `src/slug.ts`       | Short-slug generation and validation            |
+| `src/config.ts`     | Environment-driven configuration                |
+| `src/http.ts`       | Request/response helpers                        |
+| `src/errors.ts`     | `HttpError` and status-code helpers             |
+| `src/logger.ts`     | Structured JSON logging                         |
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the request flow and
+design notes.
 
 ## Tests
 
 ```bash
-node --experimental-strip-types --test test/
+node --experimental-strip-types --test
 ```

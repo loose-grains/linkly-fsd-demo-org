@@ -1,15 +1,36 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 import type { ClickTracker } from "./analytics.ts";
+import { HttpError, badRequest, conflict, notFound } from "./errors.ts";
+import { isHttpUrl, readBody, sendJson } from "./http.ts";
+import { logger } from "./logger.ts";
 import { generateSlug, isValidSlug } from "./slug.ts";
 import type { LinkStore } from "./store.ts";
 
 export interface RouterContext {
   store: LinkStore;
   tracker: ClickTracker;
+  slugLength: number;
 }
 
 export async function handleRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+  context: RouterContext
+): Promise<void> {
+  try {
+    await route(req, res, context);
+  } catch (error) {
+    if (error instanceof HttpError) {
+      sendJson(res, error.status, { error: error.message });
+      return;
+    }
+    logger.error("unhandled request error", { error: String(error) });
+    sendJson(res, 500, { error: "internal error" });
+  }
+}
+
+async function route(
   req: IncomingMessage,
   res: ServerResponse,
   context: RouterContext
@@ -34,38 +55,34 @@ export async function handleRequest(
     return;
   }
 
-  sendJson(res, 404, { error: "not found" });
+  throw notFound("not found");
 }
 
 async function handleCreateLink(
   req: IncomingMessage,
   res: ServerResponse,
-  { store }: RouterContext
+  { store, slugLength }: RouterContext
 ): Promise<void> {
   let body: { url?: string; slug?: string };
   try {
     body = JSON.parse(await readBody(req));
   } catch {
-    sendJson(res, 400, { error: "invalid JSON body" });
-    return;
+    throw badRequest("invalid JSON body");
   }
 
   if (body.url === undefined || !isHttpUrl(body.url)) {
-    sendJson(res, 400, { error: "'url' must be an http(s) URL" });
-    return;
+    throw badRequest("'url' must be an http(s) URL");
   }
 
-  const slug = body.slug ?? generateSlug();
+  const slug = body.slug ?? generateSlug(slugLength);
   if (!isValidSlug(slug)) {
-    sendJson(res, 400, { error: "invalid slug" });
-    return;
+    throw badRequest("invalid slug");
   }
 
   try {
     store.create({ slug, targetUrl: body.url, createdAt: Date.now() });
   } catch {
-    sendJson(res, 409, { error: "slug already taken" });
-    return;
+    throw conflict("slug already taken");
   }
 
   sendJson(res, 201, { slug, shortUrl: `/${slug}` });
@@ -77,8 +94,7 @@ function handleStats(
   { store, tracker }: RouterContext
 ): void {
   if (store.get(slug) === undefined) {
-    sendJson(res, 404, { error: "unknown slug" });
-    return;
+    throw notFound("unknown slug");
   }
   sendJson(res, 200, tracker.statsFor(slug));
 }
@@ -90,39 +106,11 @@ function handleRedirect(
 ): void {
   const link = store.get(slug);
   if (link === undefined) {
-    sendJson(res, 404, { error: "unknown slug" });
-    return;
+    throw notFound("unknown slug");
   }
   tracker.recordClick(slug);
+  logger.info("redirect", { slug, target: link.targetUrl });
   res.statusCode = 302;
   res.setHeader("location", link.targetUrl);
   res.end();
-}
-
-function isHttpUrl(candidate: string): boolean {
-  try {
-    const parsed = new URL(candidate);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-function readBody(req: IncomingMessage): Promise<string> {
-  return new Promise((resolve, reject) => {
-    let data = "";
-    req.on("data", (chunk) => (data += chunk));
-    req.on("end", () => resolve(data));
-    req.on("error", reject);
-  });
-}
-
-export function sendJson(
-  res: ServerResponse,
-  status: number,
-  payload: unknown
-): void {
-  res.statusCode = status;
-  res.setHeader("content-type", "application/json");
-  res.end(JSON.stringify(payload));
 }

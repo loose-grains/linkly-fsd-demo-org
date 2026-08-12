@@ -13,10 +13,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Run rate-limiter tests
-        run: |
-          if [ -f test/rate-limiter.test.js ]; then
-            node --test test/rate-limiter.test.js
-          else
-            echo "no rate-limiter tests on this branch; nothing to run"
-          fi
+      - name: Run tests
+        run: node --experimental-strip-types --test
