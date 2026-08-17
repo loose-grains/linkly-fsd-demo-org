@@ -1,0 +1,20 @@
+# Default owner for the Tack demo.
+* @natalie-sampsell
+
+# Board + domain model
+/src/board.ts @natalie-sampsell
+/src/issue.ts @natalie-sampsell
+/src/store.ts @natalie-sampsell
+
+# HTTP surface
+/src/router.ts @natalie-sampsell
+/src/server.ts @natalie-sampsell
+/src/http.ts @natalie-sampsell
+
+# UI
+/public/ @natalie-sampsell
+
+# Infra and policy files always need a human
+/.github/ @natalie-sampsell
+/.cursor/approval-policies/ @natalie-sampsell
+/docs/ @natalie-sampsell

@@ -1,9 +1,9 @@
-# Linkly
+# Tack
 
-A small URL shortener service, built as a demo codebase.
+A tiny issue tracker with a kanban board — demo codebase for Cursor Review,
+Bugbot, Approval Agents, cloud agents, and Full Self-Driving.
 
-Linkly exposes a tiny HTTP API for creating short links and tracking clicks.
-It has no external dependencies — everything runs on Node's standard library.
+No external dependencies. Node's standard library only.
 
 ## Running
 
@@ -11,39 +11,35 @@ It has no external dependencies — everything runs on Node's standard library.
 node --experimental-strip-types src/server.ts
 ```
 
-The server listens on `PORT` (default `3000`).
+Open http://localhost:3000 for the board UI. The server listens on `PORT`
+(default `3000`).
 
 ## API
 
-| Method | Path                    | Description                          |
-| ------ | ----------------------- | ------------------------------------ |
-| POST   | `/api/links`            | Create a short link (`{ "url": … }`) |
-| GET    | `/api/links/:slug/stats`| Click stats for a link               |
-| GET    | `/:slug`                | Redirect to the target URL           |
+| Method | Path                | Description                          |
+| ------ | ------------------- | ------------------------------------ |
+| GET    | `/api/board`        | Kanban columns with their issues     |
+| GET    | `/api/issues`       | All issues                           |
+| POST   | `/api/issues`       | Create an issue (`{ "title": … }`)   |
+| GET    | `/api/issues/:id`   | Fetch one issue                      |
+| PATCH  | `/api/issues/:id`   | Update title / body / status / assignee |
 
-### Configuration
-
-| Variable              | Default | Description                    |
-| --------------------- | ------- | ------------------------------ |
-| `PORT`                | `3000`  | HTTP port                      |
-| `LINKLY_SLUG_LENGTH`  | `7`     | Length of generated slugs      |
+Statuses: `backlog` → `in_progress` → `review` → `done`.
 
 ## Layout
 
-| Module              | Responsibility                                  |
-| ------------------- | ----------------------------------------------- |
-| `src/server.ts`     | HTTP server bootstrap and wiring                |
-| `src/router.ts`     | Request routing and handlers                    |
-| `src/store.ts`      | In-memory link storage                          |
-| `src/analytics.ts`  | Click tracking                                  |
-| `src/slug.ts`       | Short-slug generation and validation            |
-| `src/config.ts`     | Environment-driven configuration                |
-| `src/http.ts`       | Request/response helpers                        |
-| `src/errors.ts`     | `HttpError` and status-code helpers             |
-| `src/logger.ts`     | Structured JSON logging                         |
+| Path | Responsibility |
+| ---- | -------------- |
+| `src/server.ts` | Bootstrap + seed data |
+| `src/router.ts` | HTTP routing |
+| `src/store.ts` | Issue storage |
+| `src/board.ts` | Board projection |
+| `src/issue.ts` | Types + status helpers |
+| `public/` | Board UI |
+| `.github/CODEOWNERS` | Path owners |
+| `.cursor/approval-policies/` | Approval Agent routing |
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the request flow and
-design notes.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Tests
 

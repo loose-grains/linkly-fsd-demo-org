@@ -1,43 +1,47 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { LinkStore } from "../src/store.ts";
+import { IssueStore } from "../src/store.ts";
 
-function link(slug: string) {
-  return { slug, targetUrl: `https://example.com/${slug}`, createdAt: 0 };
-}
-
-test("create then get roundtrips a link", () => {
-  const store = new LinkStore();
-  store.create(link("docs"));
-  assert.deepEqual(store.get("docs"), link("docs"));
+test("create assigns incremental ids and defaults", () => {
+  const store = new IssueStore();
+  const first = store.create({ title: "One" }, 100);
+  const second = store.create({ title: "Two", body: "hi" }, 200);
+  assert.equal(first.id, 1);
+  assert.equal(second.id, 2);
+  assert.equal(first.status, "backlog");
+  assert.equal(first.assignee, null);
+  assert.equal(second.body, "hi");
+  assert.equal(second.createdAt, 200);
 });
 
-test("get returns undefined for unknown slugs", () => {
-  const store = new LinkStore();
-  assert.equal(store.get("missing"), undefined);
-});
-
-test("create rejects duplicate slugs", () => {
-  const store = new LinkStore();
-  store.create(link("dup"));
-  assert.throws(() => store.create(link("dup")), /already exists/);
-});
-
-test("all returns every stored link", () => {
-  const store = new LinkStore();
-  store.create(link("a"));
-  store.create(link("b"));
-  assert.deepEqual(
-    store.all().map((l) => l.slug).sort(),
-    ["a", "b"]
+test("update patches fields and bumps updatedAt", () => {
+  const store = new IssueStore();
+  store.create({ title: "Draft" }, 1);
+  const updated = store.update(
+    1,
+    { title: "Ready", status: "in_progress", assignee: "natalie" },
+    50
   );
+  assert.equal(updated.title, "Ready");
+  assert.equal(updated.status, "in_progress");
+  assert.equal(updated.assignee, "natalie");
+  assert.equal(updated.updatedAt, 50);
 });
 
-test("count reflects the number of inserts", () => {
-  const store = new LinkStore();
-  assert.equal(store.count(), 0);
-  store.create(link("one"));
-  store.create(link("two"));
-  assert.equal(store.count(), 2);
+test("update throws for unknown ids", () => {
+  const store = new IssueStore();
+  assert.throws(() => store.update(99, { title: "nope" }), /unknown issue/);
+});
+
+test("byStatus and countByStatus filter correctly", () => {
+  const store = new IssueStore();
+  store.create({ title: "A", status: "backlog" });
+  store.create({ title: "B", status: "in_progress" });
+  store.create({ title: "C", status: "in_progress" });
+  assert.equal(store.countByStatus("in_progress"), 2);
+  assert.deepEqual(
+    store.byStatus("backlog").map((i) => i.title),
+    ["A"]
+  );
 });

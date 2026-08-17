@@ -1,8 +1,8 @@
 # Architecture
 
-Linkly is a small URL shortener that runs on Node's standard library — no web
-framework, no database. It is intentionally small so the whole request path
-fits in your head.
+Tack is a tiny issue tracker with a kanban board. It runs on Node's standard
+library — no web framework, no database — so the whole request path fits in
+your head during a demo.
 
 ## Request flow
 
@@ -10,41 +10,29 @@ fits in your head.
         ┌──────────┐   raw req/res   ┌───────────┐
 HTTP ──▶│ server.ts │ ───────────────▶│ router.ts │
         └──────────┘                 └─────┬─────┘
-                                           │ dispatch by (method, path)
-                       ┌───────────────────┼────────────────────┐
-                       ▼                    ▼                    ▼
-                 handleCreateLink       handleStats         handleRedirect
-                       │                    │                    │
-                       ▼                    ▼                    ▼
-                   store.ts            analytics.ts          store.ts
+                                           │
+              ┌────────────────────────────┼──────────────────────┐
+              ▼                            ▼                      ▼
+         static UI                   /api/board              /api/issues
+         (public/)                   board.ts                store.ts
 ```
 
-- **`server.ts`** — boots the HTTP server, loads config, wires the shared
-  `LinkStore` and `ClickTracker`, and forwards each request to the router.
-- **`router.ts`** — the only place that knows about routes. It matches on
-  `(method, pathname)`, delegates to a handler, and converts thrown
-  `HttpError`s into JSON responses.
-- **`store.ts`** — in-memory link storage keyed by slug.
-- **`analytics.ts`** — per-slug click counters, deliberately separate from
-  storage so the two can evolve independently.
-- **`slug.ts`** — generation and validation of short, human-friendly slugs.
+- **`server.ts`** — boots HTTP, seeds a few starter issues, wires the store.
+- **`router.ts`** — matches routes, validates payloads, converts `HttpError`s.
+- **`store.ts`** — in-memory issues keyed by id.
+- **`board.ts`** — groups issues into columns for the board API / UI.
+- **`issue.ts`** — shared types and status helpers.
+- **`public/`** — a small board UI so browsing the repo feels like a product.
 
 ## Cross-cutting modules
 
-- **`config.ts`** — the single reader of `process.env`. Everything else takes a
-  resolved `Config`, which keeps handlers easy to test.
-- **`http.ts`** — tiny request/response helpers (`sendJson`, `readBody`,
-  `isHttpUrl`) shared across handlers.
-- **`errors.ts`** — `HttpError` plus `badRequest` / `notFound` / `conflict`
-  constructors. Handlers throw; the router catches.
+- **`config.ts`** — single reader of `process.env`.
+- **`http.ts`** — `sendJson`, `readBody`, static file serving.
+- **`errors.ts`** — `HttpError` helpers.
 - **`logger.ts`** — one-line structured JSON logging.
 
-## Design notes
+## Ownership
 
-- **Errors flow up, not sideways.** Handlers never format their own error
-  responses; they throw an `HttpError` and let the router's catch translate it.
-  This keeps status-code decisions next to the business logic.
-- **State lives at the edge.** `LinkStore` and `ClickTracker` are created once in
-  `server.ts` and passed in as context, so handlers stay pure and unit-testable.
-- **The standard library is enough.** Swapping the in-memory store for a real
-  database would touch only `store.ts` and its context wiring.
+Path ownership lives in `.github/CODEOWNERS`. Approval Agent routing lives in
+`.cursor/approval-policies/` — those files are what PR Routing / Approval
+Agents read during review.

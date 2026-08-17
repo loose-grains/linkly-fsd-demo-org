@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tack</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header>
+      <div>
+        <p class="eyebrow">Tack</p>
+        <h1>Issue board</h1>
+      </div>
+      <form id="create">
+        <input
+          id="title"
+          name="title"
+          placeholder="New issue title"
+          required
+          autocomplete="off"
+        />
+        <button type="submit">Add</button>
+      </form>
+    </header>
+    <main id="board" aria-live="polite"></main>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

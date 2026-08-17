@@ -1,9 +1,9 @@
 {
-  "name": "linkly",
+  "name": "tack",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "A tiny URL shortener with click analytics",
+  "description": "A tiny issue tracker with a kanban board — demo codebase",
   "scripts": {
     "start": "node --experimental-strip-types src/server.ts",
     "test": "node --experimental-strip-types --test"
